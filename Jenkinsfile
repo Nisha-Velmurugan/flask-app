@@ -2,21 +2,26 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "flask-app"
-        CONTAINER_NAME = "flask-container"
+        GIT_CREDENTIALS_ID = 'github-token' 
+        IMAGE_NAME = 'flask-app'
+        CONTAINER_NAME = 'flask-container'
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/your-username/flask-app.git'
+                script {
+                    git branch: 'main',
+                        credentialsId: "${GIT_CREDENTIALS_ID}",
+                        url: 'https://github.com/Nisha-Velmurugan/flask-app.git'
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${IMAGE_NAME} ."
+                    sh 'docker build -t ${IMAGE_NAME}:latest .'
                 }
             }
         }
@@ -24,12 +29,15 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    // Stop any running container with the same name
-                    sh "docker stop ${CONTAINER_NAME} || true"
-                    sh "docker rm ${CONTAINER_NAME} || true"
+                    sh '''
+                    if [ $(docker ps -q -f name=${CONTAINER_NAME}) ]; then
+                        docker stop ${CONTAINER_NAME}
+                        docker rm ${CONTAINER_NAME}
+                    fi
 
-                    // Run a new container
-                    sh "docker run -d --name ${CONTAINER_NAME} -p 5000:5000 ${IMAGE_NAME}"
+                    // Run the new container
+                    docker run -d -p 5000:5000 --name ${CONTAINER_NAME} ${IMAGE_NAME}:latest
+                    '''
                 }
             }
         }
@@ -37,9 +45,18 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    sh "docker system prune -f"
+                    sh 'docker system prune -f'
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "Deployment Successful: Flask app is running."
+        }
+        failure {
+            echo "Deployment Failed!"
         }
     }
 }
