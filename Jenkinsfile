@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        GIT_CREDENTIALS_ID = 'github-token' 
+        GIT_CREDENTIALS_ID = 'git-token' 
         IMAGE_NAME = 'flask-app'
         CONTAINER_NAME = 'flask-container'
     }
